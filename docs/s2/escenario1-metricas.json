@@ -1,0 +1,32 @@
+﻿{
+    "umbralLentaMs":  1000,
+    "rutas":  [
+                  {
+                      "ruta":  "GET /health",
+                      "peticiones":  94100,
+                      "promedioMs":  0.08684353527098812,
+                      "maxMs":  5.42018299999836,
+                      "lentas":  0
+                  },
+                  {
+                      "ruta":  "GET /reporte/bloqueante",
+                      "peticiones":  1,
+                      "promedioMs":  1849.694481999999,
+                      "maxMs":  1849.694481999999,
+                      "lentas":  1
+                  }
+              ],
+    "nucleos":  12,
+    "bucle":  {
+                  "p50Ms":  10,
+                  "p99Ms":  14,
+                  "maxMs":  1865
+              },
+    "pool":  {
+                 "maxTrabajadores":  2,
+                 "activos":  0,
+                 "enCola":  0,
+                 "maxCola":  4,
+                 "rechazadas":  0
+             }
+}
