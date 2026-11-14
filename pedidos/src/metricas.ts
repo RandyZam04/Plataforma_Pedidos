@@ -1,8 +1,18 @@
 
-// Interceptor que mide cada petición (tarea en clase).
-import { Request, Response, NextFunction } from "express";
 
-const UMBRAL_LENTA_MS = Number(process.env.UMBRAL_LENTA_MS ?? 1000);
+import { Request, Response, NextFunction } from "express";
+import { monitorEventLoopDelay } from "node:perf_hooks";
+import os from "node:os";
+
+const UMBRAL_LENTA_MS = Number(
+  process.env.UMBRAL_LENTA_MS ?? 1000
+);
+
+const retardoBucle = monitorEventLoopDelay({
+  resolution: 10
+});
+
+retardoBucle.enable();
 
 interface Estadistica {
   peticiones: number;
@@ -13,14 +23,15 @@ interface Estadistica {
 
 const porRuta = new Map<string, Estadistica>();
 
-export function medirLatencia(req: Request, res: Response, next: NextFunction): void {
+export function medirLatencia(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   const inicio = performance.now();
 
   res.on("finish", () => {
-    // TODO 1: calcula la duración en ms
     const duracionMs = performance.now() - inicio;
-
-    // TODO 2: busca la estadística de la ruta (créala si no existe)
     const ruta = `${req.method} ${req.path}`;
 
     let estadistica = porRuta.get(ruta);
@@ -32,13 +43,16 @@ export function medirLatencia(req: Request, res: Response, next: NextFunction): 
         maxMs: 0,
         lentas: 0
       };
+
       porRuta.set(ruta, estadistica);
     }
 
-    // TODO 3: actualiza las estadísticas
     estadistica.peticiones++;
     estadistica.totalMs += duracionMs;
-    estadistica.maxMs = Math.max(estadistica.maxMs, duracionMs);
+    estadistica.maxMs = Math.max(
+      estadistica.maxMs,
+      duracionMs
+    );
 
     if (duracionMs > UMBRAL_LENTA_MS) {
       estadistica.lentas++;
@@ -49,15 +63,32 @@ export function medirLatencia(req: Request, res: Response, next: NextFunction): 
 }
 
 export function resumenMetricas() {
-  // TODO 4: devuelve el resumen de métricas
   return {
     umbralLentaMs: UMBRAL_LENTA_MS,
-    rutas: Array.from(porRuta.entries()).map(([ruta, estadistica]) => ({
-      ruta,
-      peticiones: estadistica.peticiones,
-      promedioMs: estadistica.totalMs / estadistica.peticiones,
-      maxMs: estadistica.maxMs,
-      lentas: estadistica.lentas
-    }))
+
+    rutas: Array.from(porRuta.entries()).map(
+      ([ruta, estadistica]) => ({
+        ruta,
+        peticiones: estadistica.peticiones,
+        promedioMs:
+          estadistica.totalMs / estadistica.peticiones,
+        maxMs: estadistica.maxMs,
+        lentas: estadistica.lentas
+      })
+    ),
+
+    nucleos: os.availableParallelism(),
+
+    bucle: {
+      p50Ms: Math.round(
+        retardoBucle.percentile(50) / 1e6
+      ),
+      p99Ms: Math.round(
+        retardoBucle.percentile(99) / 1e6
+      ),
+      maxMs: Math.round(
+        retardoBucle.max / 1e6
+      )
+    }
   };
 }
