@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import {iniciarGrpc} from './grpc';
 
 const PORT = Number(process.env.PORT ?? 3001);
 const RETARDO_MS = Number(process.env.RETARDO_MS ?? 0);
@@ -9,7 +10,8 @@ const stock = new Map<string, number>([
     ['Lavadora', 40],
     ['Refrigerador', 12],
     ['Microondas', 0],
-    ['MOUSE-USB', 40]
+    ['MOUSE-USB', 40],
+    ['ZAMORA-USB', 25]
 ]);
 
 const esperar = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -68,3 +70,8 @@ app.post('/stock/:sku/reservar', async (req: Request<{ sku: string }>, res: Resp
 app.listen(PORT, () => {
     console.log(`Inventario en puerto ${PORT}; retardo ${RETARDO_MS} ms`);
 });
+
+//import { iniciarGrpc } from './grpc';
+iniciarGrpc(stock, RETARDO_MS);
+
+
